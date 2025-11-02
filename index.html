@@ -1,3 +1,5 @@
+
+           
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -201,45 +203,44 @@
               ctx.stroke();
             }
 
-            // Disegna il Marker (Freccia Dinamica) se un numero è stato estratto
-            if (currentNumber !== null) {
-              const winningIndex = numbers.indexOf(currentNumber);
-              
-              // Calcola l'angolo in cui si trova il centro del segmento vincente
-              // Si usa (rotation * Math.PI / 180) per tener conto della rotazione attuale della ruota
-              let markerAngle = winningIndex * anglePerSegment + anglePerSegment / 2 + (rotation * Math.PI / 180);
-              
-              // Posizione del centro della ruota
-              ctx.save();
-              ctx.translate(centerX, centerY);
-              
-              // Ruota per allineare l'indicatore al centro del segmento vincente
-              ctx.rotate(markerAngle); 
-              
-              const markerDistance = radius + 45; 
-              
-              ctx.beginPath();
-              // Punta del triangolo (più lontana dal centro)
-              ctx.moveTo(markerDistance + 20, 0); 
-              // Bordo superiore (più vicino al centro)
-              ctx.lineTo(markerDistance, -20);
-              // Bordo inferiore (più vicino al centro)
-              ctx.lineTo(markerDistance, 20); 
-              ctx.closePath();
-              
-              // Effetto brillante per il marker
-              const markerGradient = ctx.createLinearGradient(markerDistance, 0, markerDistance + 20, 0);
-              markerGradient.addColorStop(0, '#FFFFFF'); 
-              markerGradient.addColorStop(1, '#FFD700'); 
-              
-              ctx.fillStyle = markerGradient;
-              ctx.fill();
-              ctx.strokeStyle = '#8B4513';
-              ctx.lineWidth = 4;
-              ctx.stroke();
-              
-              ctx.restore();
-            }
+            // Disegna la freccia fissa in alto
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            
+            // Freccia fissa posizionata in alto (0 gradi)
+            const arrowDistance = radius + 45;
+            
+            ctx.beginPath();
+            // Punta del triangolo (più lontana dal centro)
+            ctx.moveTo(arrowDistance + 30, 0);
+            // Bordo superiore (più vicino al centro)
+            ctx.lineTo(arrowDistance, -25);
+            // Bordo inferiore (più vicino al centro)
+            ctx.lineTo(arrowDistance, 25);
+            ctx.closePath();
+            
+            // Effetto brillante per la freccia
+            const arrowGradient = ctx.createLinearGradient(arrowDistance, 0, arrowDistance + 30, 0);
+            arrowGradient.addColorStop(0, '#FF0000');
+            arrowGradient.addColorStop(0.5, '#FF3333');
+            arrowGradient.addColorStop(1, '#FFFFFF');
+            
+            ctx.fillStyle = arrowGradient;
+            ctx.fill();
+            ctx.strokeStyle = '#8B0000';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Cerchio alla base della freccia
+            ctx.beginPath();
+            ctx.arc(arrowDistance + 15, 0, 12, 0, Math.PI * 2);
+            ctx.fillStyle = '#FF0000';
+            ctx.fill();
+            ctx.strokeStyle = '#8B0000';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            ctx.restore();
           };
 
           const drawConfetti = () => {
@@ -332,16 +333,9 @@
             const targetIndex = numbers.indexOf(targetNum);
             const anglePerSegment = 360 / numbers.length;
             
-            // L'angolo finale non deve essere fissato a 90 gradi. 
-            // Vogliamo solo che il segmento vincente sia centrato quando la ruota si ferma.
-            
-            const targetAngleInSegment = targetIndex * anglePerSegment;
-            const offsetToCenter = anglePerSegment / 2;
-            
-            const spins = 5 + Math.random() * 2;
-            // Calcolo corretto per fermarsi al centro del segmento, senza fissare la posizione in alto.
-            // L'angolo di stop è casuale.
-            const finalRotation = (360 * spins) + Math.random() * 360; 
+            // Calcolo per far fermare il numero estratto esattamente sotto la freccia (a 0 gradi)
+            // La freccia è fissa a 0 gradi (in alto)
+            const targetAngle = 360 * 5 - (targetIndex * anglePerSegment) - (anglePerSegment / 2);
             
             let start = null;
             const duration = 3000;
@@ -352,24 +346,10 @@
               
               if (progress < 1) {
                 const easeOut = 1 - Math.pow(1 - progress, 4);
-                setRotation(finalRotation * easeOut);
+                setRotation(targetAngle * easeOut);
                 requestAnimationFrame(animate);
               } else {
-                // Calcolo preciso dell'angolo per centrare il numero estratto
-                let finalDegrees = finalRotation % 360;
-                
-                // Angolo di inizio del segmento vincente (senza rotazione iniziale)
-                const segmentStartAngle = targetIndex * anglePerSegment;
-                
-                // Rotazione necessaria per portare il segmento al centro di 90 gradi (in alto)
-                const degreesToCenter = 90 - (segmentStartAngle + offsetToCenter);
-                
-                // Rotazione finale precisa che centra il numero estratto
-                const preciseFinalRotation = finalDegrees + (degreesToCenter - (finalDegrees % 360)) + (360 * 2);
-                
-                // Per il marker dinamico, usiamo semplicemente l'angolo finale della rotazione smooth,
-                // poiché la freccia lo seguirà.
-                setRotation(finalRotation % 360);
+                setRotation(targetAngle);
                 setCurrentNumber(targetNum);
                 setSpinning(false);
                 setShowConfetti(true);

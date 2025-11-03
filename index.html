@@ -1,6 +1,7 @@
 
            
 
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -27,6 +28,7 @@
           const [eliminatedNumbers, setEliminatedNumbers] = useState([]);
           const [gameOver, setGameOver] = useState(false);
           const [showConfetti, setShowConfetti] = useState(false);
+          // Rimosso numbersShuffled per permettere l'azione di mischiare sempre
           const canvasRef = useRef(null);
           const confettiRef = useRef(null);
 
@@ -395,6 +397,19 @@
             const nums = Array.from({ length: 50 }, (_, i) => i + 1);
             setNumbers(nums);
             setGameStarted(true);
+            shuffleNumbers(nums); // Mescola all'inizio
+          };
+
+          const shuffleNumbers = (initialNumbers = numbers) => {
+            if (spinning) return;
+            // Mescola l'array dei numeri in modo casuale
+            const arrayToShuffle = initialNumbers.length > 0 ? initialNumbers : numbers;
+            const shuffled = [...arrayToShuffle];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            setNumbers(shuffled);
           };
 
           const spinWheel = () => {
@@ -515,52 +530,71 @@
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center">
-                    <div className="relative mb-6 p-10 bg-gradient-to-br from-amber-950/60 to-red-950/60 rounded-3xl shadow-2xl border-4 border-yellow-500 backdrop-blur-sm">
-                      <canvas
-                        ref={canvasRef}
-                        width={700}
-                        height={700}
-                        className="drop-shadow-2xl"
-                      />
+                  <div className="flex justify-center gap-10">
+                    
+                    {/* COLONNA SINISTRA: RUOTA E BOTTONI */}
+                    <div className="flex flex-col items-center">
+                      <div className="relative mb-6 p-10 bg-gradient-to-br from-amber-950/60 to-red-950/60 rounded-3xl shadow-2xl border-4 border-yellow-500 backdrop-blur-sm">
+                        <canvas
+                          ref={canvasRef}
+                          width={700}
+                          height={700}
+                          className="drop-shadow-2xl"
+                        />
+                      </div>
+                      
+                      {currentNumber && (
+                        <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-red-600 px-16 py-8 rounded-3xl mb-8 shadow-2xl border-4 border-yellow-200">
+                          <p className="text-6xl font-bold text-white drop-shadow-2xl">🎉 ULTIMO ESTRATTO: {currentNumber} 🎉</p>
+                        </div>
+                      )}
+                      
+                      {!gameOver && (
+                        <div className="flex flex-col items-center gap-6">
+                          <button
+                            onClick={() => shuffleNumbers()}
+                            disabled={spinning}
+                            className={`bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-700 text-white px-12 py-6 rounded-3xl font-bold text-3xl transition-all shadow-2xl border-4 border-blue-300 ${
+                              spinning ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-indigo-800 hover:scale-105 hover:shadow-blue-400/60'
+                            }`}
+                          >
+                            🔀 MISCHIA NUMERI
+                          </button>
+                          <button
+                            onClick={spinWheel}
+                            disabled={spinning}
+                            className={`bg-gradient-to-r from-yellow-400 via-amber-500 to-red-600 text-white px-20 py-8 rounded-3xl font-bold text-4xl transition-all shadow-2xl border-4 border-yellow-200 ${
+                              spinning ? 'opacity-50 cursor-not-allowed' : 'hover:from-yellow-500 hover:to-red-700 hover:scale-110 hover:shadow-yellow-400/60 animate-pulse'
+                            }`}
+                          >
+                            {spinning ? '🎡 GIRANDO...' : '🎰 GIRA LA RUOTA'}
+                          </button>
+                        </div>
+                      )}
+                      
+                      {gameOver && (
+                        <div className="bg-gradient-to-r from-yellow-300 via-amber-400 to-red-500 p-12 rounded-3xl border-4 border-yellow-200 shadow-2xl animate-pulse">
+                          <h2 className="text-6xl font-bold text-white mb-6 drop-shadow-2xl">🏆 GIOCO TERMINATO! 🏆</h2>
+                          <p className="text-4xl text-white drop-shadow-xl">Il numero vincente (segreto) era: <span className="text-7xl font-bold">{numbers[0]}</span></p>
+                        </div>
+                      )}
                     </div>
                     
-                    {currentNumber && (
-                      <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-red-600 px-16 py-8 rounded-3xl mb-8 shadow-2xl border-4 border-yellow-200">
-                        <p className="text-6xl font-bold text-white drop-shadow-2xl">🎉 ULTIMO ESTRATTO: {currentNumber} 🎉</p>
-                      </div>
-                    )}
-                    
-                    {!gameOver && (
-                      <button
-                        onClick={spinWheel}
-                        disabled={spinning}
-                        className={`bg-gradient-to-r from-yellow-400 via-amber-500 to-red-600 text-white px-20 py-8 rounded-3xl font-bold text-4xl transition-all shadow-2xl border-4 border-yellow-200 ${
-                          spinning ? 'opacity-50 cursor-not-allowed' : 'hover:from-yellow-500 hover:to-red-700 hover:scale-110 hover:shadow-yellow-400/60 animate-pulse'
-                        }`}
-                      >
-                        {spinning ? '🎡 GIRANDO...' : '🎰 GIRA LA RUOTA'}
-                      </button>
-                    )}
-                    
-                    {gameOver && (
-                      <div className="bg-gradient-to-r from-yellow-300 via-amber-400 to-red-500 p-12 rounded-3xl border-4 border-yellow-200 shadow-2xl animate-pulse">
-                        <h2 className="text-6xl font-bold text-white mb-6 drop-shadow-2xl">🏆 GIOCO TERMINATO! 🏆</h2>
-                        <p className="text-4xl text-white drop-shadow-xl">Il numero vincente (segreto) era: <span className="text-7xl font-bold">{numbers[0]}</span></p>
-                      </div>
-                    )}
-                    
-                    <div className="mt-10 bg-gradient-to-br from-black/80 to-amber-950/80 backdrop-blur-md p-10 rounded-3xl border-4 border-yellow-500 shadow-2xl max-w-4xl">
-                      <h3 className="text-3xl text-yellow-300 mb-5 font-bold">📊 Numeri Rimasti: {numbers.length}</h3>
-                      <h3 className="text-3xl text-red-400 mb-6 font-bold">❌ Numeri Eliminati: {eliminatedNumbers.length}</h3>
-                      <div className="flex flex-wrap gap-4 justify-center">
-                        {eliminatedNumbers.map(num => (
-                          <span key={num} className="bg-gradient-to-br from-red-600 to-red-900 text-white px-5 py-3 rounded-full text-xl font-bold shadow-xl border-2 border-red-400 hover:scale-110 transition-transform">
-                            {num}
-                          </span>
-                        ))}
-                      </div>
+                    {/* COLONNA DESTRA: NUMERI ESTRATTI */}
+                    <div className="w-96 mt-10">
+                        <div className="bg-gradient-to-br from-black/80 to-amber-950/80 backdrop-blur-md p-6 rounded-3xl border-4 border-yellow-500 shadow-2xl sticky top-10">
+                            <h3 className="text-3xl text-yellow-300 mb-5 font-bold">📊 Numeri Rimasti: {numbers.length}</h3>
+                            <h3 className="text-3xl text-red-400 mb-6 font-bold">❌ Numeri Eliminati: {eliminatedNumbers.length}</h3>
+                            <div className="flex flex-wrap gap-3 justify-start max-h-[80vh] overflow-y-auto pr-2">
+                                {eliminatedNumbers.map(num => (
+                                <span key={num} className="bg-gradient-to-br from-red-600 to-red-900 text-white px-4 py-2 rounded-full text-lg font-bold shadow-xl border-2 border-red-400 hover:scale-105 transition-transform">
+                                    {num}
+                                </span>
+                                ))}
+                            </div>
+                        </div>
                     </div>
+
                   </div>
                 )}
               </div>

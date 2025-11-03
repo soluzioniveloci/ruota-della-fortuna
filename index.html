@@ -2,6 +2,7 @@
            
 
 
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -28,7 +29,6 @@
           const [eliminatedNumbers, setEliminatedNumbers] = useState([]);
           const [gameOver, setGameOver] = useState(false);
           const [showConfetti, setShowConfetti] = useState(false);
-          // Rimosso numbersShuffled per permettere l'azione di mischiare sempre
           const canvasRef = useRef(null);
           const confettiRef = useRef(null);
 
@@ -75,9 +75,6 @@
             numbers.forEach((num, index) => {
               const startAngle = index * anglePerSegment + (rotation * Math.PI / 180);
               const endAngle = startAngle + anglePerSegment;
-              
-              // Calcola il centro del segmento (necessario per ruotare il testo)
-              const segmentCenterAngle = startAngle + anglePerSegment / 2;
               
               // Evidenziazione basata sullo stato (Affidabile per l'allineamento perfetto)
               const isWinning = currentNumber === num;
@@ -401,50 +398,60 @@
           };
 
           const shuffleNumbers = (initialNumbers = numbers) => {
-            if (spinning) return;
-            // Mescola l'array dei numeri in modo casuale
-            const arrayToShuffle = initialNumbers.length > 0 ? initialNumbers : numbers;
-            const shuffled = [...arrayToShuffle];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            setNumbers(shuffled);
+            // Impedisce di mischiare mentre la ruota sta girando o mostrando il risultato
+            if (spinning || currentNumber !== null) return; 
+            
+            // Usa la forma funzionale di setState per garantire che si stia lavorando sull'ultima lista di numeri
+            setNumbers(prevNumbers => {
+                const arrayToShuffle = prevNumbers.length > 0 ? prevNumbers : initialNumbers;
+                const shuffled = [...arrayToShuffle];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                  const j = Math.floor(Math.random() * (i + 1));
+                  [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            });
           };
 
           const spinWheel = () => {
-            if (spinning || numbers.length === 0) return;
+            // Impedisce l'avvio se sta già girando, se la ruota è vuota, o se il risultato è ancora visibile
+            if (spinning || numbers.length === 0 || currentNumber !== null) return; 
             
             setSpinning(true);
             
+            // Usiamo una copia locale dello stato per calcolare l'estrazione e l'indice
+            const currentNumbersList = numbers;
+            
             let targetNum;
-            if (numbers.length === 1) {
-              targetNum = numbers[0];
+            
+            if (currentNumbersList.length === 1) {
+              targetNum = currentNumbersList[0];
               setGameOver(true);
             } else {
-              const availableNumbers = numbers.filter(n => n !== parseInt(secretNumber));
+              const availableNumbers = currentNumbersList.filter(n => n !== parseInt(secretNumber));
+              // Si estrae solo dai numeri disponibili (non il segreto)
               targetNum = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
             }
             
-            const targetIndex = numbers.indexOf(targetNum);
-            const anglePerSegment = 360 / numbers.length;
+            // Il calcolo dell'indice deve essere fatto sulla lista corrente (prima della rimozione)
+            const targetIndex = currentNumbersList.indexOf(targetNum);
             
-            // --- CALCOLO TARGET ANGLE PERFETTAMENTE ALLINEATO ---
-            
+            // Prepara i nuovi stati per l'aggiornamento
+            const nextNumbersList = currentNumbersList.filter(n => n !== targetNum);
+            const nextEliminatedList = [...eliminatedNumbers, targetNum];
+
+            // --- CALCOLO TARGET ANGLE PERFETTAMENTE ALLINEATO (GRADI) ---
+            const anglePerSegment = 360 / currentNumbersList.length; 
             const segmentStartAngle = targetIndex * anglePerSegment;
             const segmentCenterAngle = segmentStartAngle + (anglePerSegment / 2);
             
-            // Angolo di rotazione richiesto per portare il CENTRO del segmento a 0 gradi (destra)
+            // Angolo di rotazione richiesto per portare il CENTRO del segmento a 0 gradi (destra, freccia)
             let requiredRotation = 360 - segmentCenterAngle;
             requiredRotation = ((requiredRotation % 360) + 360) % 360;
             
             const totalSpins = 5;
-            // Angolo totale per l'animazione (molti giri + rotazione richiesta)
             const targetAngleAnimation = (totalSpins * 360) + requiredRotation;
-            
-            // Angolo finale su cui la ruota DEVE stabilizzarsi (0-360 gradi)
             const finalRotationAngle = requiredRotation; 
-            
             // --- FINE CALCOLO TARGET ANGLE ---
             
             let start = null;
@@ -460,20 +467,22 @@
                 setRotation(targetAngleAnimation * easeOut); 
                 requestAnimationFrame(animate);
               } else {
-                // PASSAGGIO CRITICO: Imposta l'angolo finale NORMALE (0-360)
-                // Questo risolve i problemi di disallineamento all'arresto.
+                // *** Allineamento finale e Correzione Bug ***
+                
+                // 1. Imposta l'angolo finale NORMALE per l'allineamento preciso
                 setRotation(finalRotationAngle); 
                 
-                // Imposta gli stati di estrazione
+                // 2. Imposta gli stati di estrazione
                 setCurrentNumber(targetNum);
-                setSpinning(false);
                 setShowConfetti(true);
+                setSpinning(false); // Permette il riutilizzo del pulsante "Mischia Numeri"
                 
-                // Esegui la rimozione del numero con un ritardo fisso
+                // 3. AGGIORNA GLI STATI DI RIMOSIONE SUBITO DOPO L'ARRESTO
+                setNumbers(nextNumbersList); // Fix: la lista è aggiornata immediatamente
+                setEliminatedNumbers(nextEliminatedList); 
+
+                // 4. Esegui la rimozione del numero estratto dal centro e resetta la rotazione dopo un ritardo (solo visivo)
                 setTimeout(() => {
-                  const newNumbers = numbers.filter(n => n !== targetNum);
-                  setNumbers(newNumbers);
-                  setEliminatedNumbers([...eliminatedNumbers, targetNum]);
                   setCurrentNumber(null);
                   setRotation(0); // Reset della rotazione per la prossima estrazione
                 }, 2000);
@@ -553,18 +562,20 @@
                         <div className="flex flex-col items-center gap-6">
                           <button
                             onClick={() => shuffleNumbers()}
-                            disabled={spinning}
+                            // Disabilita se sta girando O se il risultato è in corso di visualizzazione
+                            disabled={spinning || currentNumber !== null} 
                             className={`bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-700 text-white px-12 py-6 rounded-3xl font-bold text-3xl transition-all shadow-2xl border-4 border-blue-300 ${
-                              spinning ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-indigo-800 hover:scale-105 hover:shadow-blue-400/60'
+                              spinning || currentNumber !== null ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-indigo-800 hover:scale-105 hover:shadow-blue-400/60'
                             }`}
                           >
                             🔀 MISCHIA NUMERI
                           </button>
                           <button
                             onClick={spinWheel}
-                            disabled={spinning}
+                            // Disabilita se sta girando O se il risultato è in corso di visualizzazione
+                            disabled={spinning || currentNumber !== null} 
                             className={`bg-gradient-to-r from-yellow-400 via-amber-500 to-red-600 text-white px-20 py-8 rounded-3xl font-bold text-4xl transition-all shadow-2xl border-4 border-yellow-200 ${
-                              spinning ? 'opacity-50 cursor-not-allowed' : 'hover:from-yellow-500 hover:to-red-700 hover:scale-110 hover:shadow-yellow-400/60 animate-pulse'
+                              spinning || currentNumber !== null ? 'opacity-50 cursor-not-allowed' : 'hover:from-yellow-500 hover:to-red-700 hover:scale-110 hover:shadow-yellow-400/60 animate-pulse'
                             }`}
                           >
                             {spinning ? '🎡 GIRANDO...' : '🎰 GIRA LA RUOTA'}

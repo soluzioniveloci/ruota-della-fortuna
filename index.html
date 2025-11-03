@@ -7,8 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ruota della Fortuna</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
@@ -42,6 +42,7 @@
             
             const anglePerSegment = (Math.PI * 2) / numbers.length;
             
+            // Disegno dei bordi esterni della ruota
             ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
             ctx.shadowBlur = 30;
             ctx.shadowOffsetX = 0;
@@ -67,11 +68,15 @@
             
             ctx.shadowBlur = 0;
             
+            // Disegno dei segmenti e dei numeri
             numbers.forEach((num, index) => {
               const startAngle = index * anglePerSegment + (rotation * Math.PI / 180);
               const endAngle = startAngle + anglePerSegment;
               
-              // Verifica se questo è il numero estratto (quello in alto)
+              // Calcola il centro del segmento (necessario per ruotare il testo)
+              const segmentCenterAngle = startAngle + anglePerSegment / 2;
+              
+              // Evidenziazione basata sullo stato (Affidabile per l'allineamento perfetto)
               const isWinning = currentNumber === num;
               
               ctx.beginPath();
@@ -103,7 +108,7 @@
               ctx.lineWidth = isWinning ? 8 : 4;
               ctx.stroke();
               
-              // Disegna il numero con effetto 3D
+              // Disegna il numero
               ctx.save();
               ctx.translate(centerX, centerY);
               ctx.rotate(startAngle + anglePerSegment / 2);
@@ -115,7 +120,7 @@
               ctx.shadowOffsetX = 3;
               ctx.shadowOffsetY = 3;
               
-              // Numero vincente più grande e colorato
+              // Stile del numero
               ctx.font = isWinning ? 'bold 36px Arial' : 'bold 26px Arial';
               ctx.strokeStyle = '#000000';
               ctx.lineWidth = 5;
@@ -126,64 +131,106 @@
               ctx.restore();
             });
             
-            const centerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 100);
-            centerGradient.addColorStop(0, '#FFD700');
-            centerGradient.addColorStop(0.5, '#FFA500');
-            centerGradient.addColorStop(0.8, '#FF8C00');
-            centerGradient.addColorStop(1, '#FF6347');
+            // --- INIZIO LOGICA CENTRALE: MOSTRA IL NUMERO ESTRATTO O IL CENTRO DECORATIVO ---
             
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 100, 0, Math.PI * 2);
-            ctx.fillStyle = centerGradient;
-            ctx.fill();
-            
-            ctx.strokeStyle = '#8B4513';
-            ctx.lineWidth = 8;
-            ctx.stroke();
-            
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 92, 0, Math.PI * 2);
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            
-            ctx.save();
-            ctx.translate(centerX, centerY);
-            for (let i = 0; i < 12; i++) {
-              ctx.save();
-              ctx.rotate((i * Math.PI) / 6);
-              
-              const rayGradient = ctx.createLinearGradient(0, 0, 0, -80);
-              rayGradient.addColorStop(0, '#8B4513');
-              rayGradient.addColorStop(1, '#D2691E');
-              
-              ctx.strokeStyle = rayGradient;
-              ctx.lineWidth = 6;
-              ctx.beginPath();
-              ctx.moveTo(0, 0);
-              ctx.lineTo(0, -80);
-              ctx.stroke();
-              
-              ctx.beginPath();
-              ctx.arc(0, -75, 5, 0, Math.PI * 2);
-              ctx.fillStyle = '#FFD700';
-              ctx.fill();
-              ctx.restore();
+            if (currentNumber !== null) {
+                // ********* MOSTRA IL NUMERO ESTRATTO AL CENTRO (Maggiore Risalto) *********
+                
+                // Disegna lo sfondo del cerchio centrale
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 100, 0, Math.PI * 2);
+                
+                const winningCenterGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 100);
+                winningCenterGradient.addColorStop(0, '#FFFACD'); // Giallo Chiaro
+                winningCenterGradient.addColorStop(0.5, '#FFD700'); // Oro
+                winningCenterGradient.addColorStop(1, '#DAA520'); // Oro Scuro
+                ctx.fillStyle = winningCenterGradient;
+                ctx.fill();
+                
+                ctx.strokeStyle = '#8B4513'; // Bordo Marrone/Oro
+                ctx.lineWidth = 12;
+                ctx.stroke();
+
+                // Disegna il numero estratto
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                ctx.shadowColor = 'rgba(139, 0, 0, 0.8)'; // Ombra rossa per risalto
+                ctx.shadowBlur = 15;
+                ctx.shadowOffsetX = 4;
+                ctx.shadowOffsetY = 4;
+                
+                ctx.font = 'bold 90px Arial'; // Numero ancora più grande
+                ctx.strokeStyle = '#FFFFFF'; // Contorno bianco
+                ctx.lineWidth = 8;
+                ctx.strokeText(currentNumber, 0, 0);
+                
+                ctx.fillStyle = '#FF0000'; // Colore principale Rosso
+                ctx.fillText(currentNumber, 0, 0);
+                ctx.restore();
+                
+            } else {
+                // ********* CENTRO DECORATIVO STANDARD *********
+
+                const centerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 100);
+                centerGradient.addColorStop(0, '#FFD700');
+                centerGradient.addColorStop(0.5, '#FFA500');
+                centerGradient.addColorStop(0.8, '#FF8C00');
+                centerGradient.addColorStop(1, '#FF6347');
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 100, 0, Math.PI * 2);
+                ctx.fillStyle = centerGradient;
+                ctx.fill();
+                
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 8;
+                ctx.stroke();
+                
+                // Raggi e perni
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                for (let i = 0; i < 12; i++) {
+                  ctx.save();
+                  ctx.rotate((i * Math.PI) / 6);
+                  
+                  const rayGradient = ctx.createLinearGradient(0, 0, 0, -80);
+                  rayGradient.addColorStop(0, '#8B4513');
+                  rayGradient.addColorStop(1, '#D2691E');
+                  
+                  ctx.strokeStyle = rayGradient;
+                  ctx.lineWidth = 6;
+                  ctx.beginPath();
+                  ctx.moveTo(0, 0);
+                  ctx.lineTo(0, -80);
+                  ctx.stroke();
+                  
+                  ctx.beginPath();
+                  ctx.arc(0, -75, 5, 0, Math.PI * 2);
+                  ctx.fillStyle = '#FFD700';
+                  ctx.fill();
+                  ctx.restore();
+                }
+                ctx.restore();
+                
+                // Cerchio interno piccolo
+                const innerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 25);
+                innerGradient.addColorStop(0, '#FFD700');
+                innerGradient.addColorStop(1, '#B8860B');
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 25, 0, Math.PI * 2);
+                ctx.fillStyle = innerGradient;
+                ctx.fill();
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 4;
+                ctx.stroke();
             }
-            ctx.restore();
-            
-            const innerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 25);
-            innerGradient.addColorStop(0, '#FFD700');
-            innerGradient.addColorStop(1, '#B8860B');
-            
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 25, 0, Math.PI * 2);
-            ctx.fillStyle = innerGradient;
-            ctx.fill();
-            ctx.strokeStyle = '#8B4513';
-            ctx.lineWidth = 4;
-            ctx.stroke();
-            
+            // --- FINE LOGICA CENTRALE ---
+
+            // Disegno delle gemme decorative esterne
             for (let i = 0; i < 16; i++) {
               const angle = (i / 16) * Math.PI * 2;
               const x = centerX + Math.cos(angle) * (radius + 18);
@@ -203,44 +250,77 @@
               ctx.stroke();
             }
 
-            // Disegna la freccia fissa in alto
+            // --- FRECCIA DIREZIONALE MIGLIORATA (Puntatore Fissato al Canvas) ---
             ctx.save();
             ctx.translate(centerX, centerY);
-            
-            // Freccia fissa posizionata in alto (0 gradi)
-            const arrowDistance = radius + 45;
-            
+
+            const arrowLength = 70; 
+            const headLength = 25; 
+            const bodyLength = arrowLength - headLength; 
+
+            const arrowHeight = 30; 
+            const bodyHalfHeight = arrowHeight / 2 - 5; 
+            const headHalfHeight = 40 / 2; // TESTA PIÙ LARGA
+
+            const distanceFromWheel = radius + 30; 
+
+            // Corpo della freccia
+            const bodyGradient = ctx.createLinearGradient(distanceFromWheel + headLength, 0, distanceFromWheel + arrowLength, 0);
+            bodyGradient.addColorStop(0, '#A9A9A9'); 
+            bodyGradient.addColorStop(0.3, '#D3D3D3'); 
+            bodyGradient.addColorStop(0.7, '#D3D3D3');
+            bodyGradient.addColorStop(1, '#A9A9A9'); 
+
             ctx.beginPath();
-            // Punta del triangolo (più lontana dal centro)
-            ctx.moveTo(arrowDistance + 30, 0);
-            // Bordo superiore (più vicino al centro)
-            ctx.lineTo(arrowDistance, -25);
-            // Bordo inferiore (più vicino al centro)
-            ctx.lineTo(arrowDistance, 25);
-            ctx.closePath();
-            
-            // Effetto brillante per la freccia
-            const arrowGradient = ctx.createLinearGradient(arrowDistance, 0, arrowDistance + 30, 0);
-            arrowGradient.addColorStop(0, '#FF0000');
-            arrowGradient.addColorStop(0.5, '#FF3333');
-            arrowGradient.addColorStop(1, '#FFFFFF');
-            
-            ctx.fillStyle = arrowGradient;
+            ctx.rect(distanceFromWheel + headLength, -bodyHalfHeight, bodyLength, bodyHalfHeight * 2); 
+            ctx.fillStyle = bodyGradient;
             ctx.fill();
-            ctx.strokeStyle = '#8B0000';
-            ctx.lineWidth = 4;
-            ctx.stroke();
-            
-            // Cerchio alla base della freccia
-            ctx.beginPath();
-            ctx.arc(arrowDistance + 15, 0, 12, 0, Math.PI * 2);
-            ctx.fillStyle = '#FF0000';
-            ctx.fill();
-            ctx.strokeStyle = '#8B0000';
+            ctx.strokeStyle = '#555555'; 
             ctx.lineWidth = 3;
             ctx.stroke();
-            
+
+            // Testa della freccia
+            const headGradient = ctx.createLinearGradient(distanceFromWheel, 0, distanceFromWheel + headLength, 0);
+            headGradient.addColorStop(0, '#DAA520'); 
+            headGradient.addColorStop(0.5, '#FFD700'); 
+            headGradient.addColorStop(1, '#B8860B'); 
+
+            ctx.beginPath();
+            ctx.moveTo(distanceFromWheel, 0); 
+            ctx.lineTo(distanceFromWheel + headLength, -headHalfHeight); 
+            ctx.lineTo(distanceFromWheel + headLength, headHalfHeight);
+            ctx.closePath();
+
+            ctx.fillStyle = headGradient;
+            ctx.fill();
+            ctx.strokeStyle = '#8B4513'; 
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Riflesso
+            ctx.beginPath();
+            ctx.moveTo(distanceFromWheel + headLength * 0.2, -headHalfHeight * 0.8);
+            ctx.lineTo(distanceFromWheel + headLength * 0.8, -headHalfHeight * 0.4);
+            ctx.lineTo(distanceFromWheel + headLength * 0.7, -headHalfHeight * 0.7);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'; 
+            ctx.fill();
+
+            // Cerchio di fissaggio/perno
+            ctx.beginPath();
+            ctx.arc(distanceFromWheel + arrowLength, 0, 12, 0, Math.PI * 2); 
+            const pinGradient = ctx.createRadialGradient(distanceFromWheel + arrowLength, 0, 0, distanceFromWheel + arrowLength, 0, 12);
+            pinGradient.addColorStop(0, '#8B0000'); 
+            pinGradient.addColorStop(0.5, '#FF4500'); 
+            pinGradient.addColorStop(1, '#800000'); 
+            ctx.fillStyle = pinGradient;
+            ctx.fill();
+            ctx.strokeStyle = '#FFD700'; 
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
             ctx.restore();
+            // --- FINE FRECCIA ---
           };
 
           const drawConfetti = () => {
@@ -333,9 +413,23 @@
             const targetIndex = numbers.indexOf(targetNum);
             const anglePerSegment = 360 / numbers.length;
             
-            // Calcolo per far fermare il numero estratto esattamente sotto la freccia (a 0 gradi)
-            // La freccia è fissa a 0 gradi (in alto)
-            const targetAngle = 360 * 5 - (targetIndex * anglePerSegment) - (anglePerSegment / 2);
+            // --- CALCOLO TARGET ANGLE PERFETTAMENTE ALLINEATO ---
+            
+            const segmentStartAngle = targetIndex * anglePerSegment;
+            const segmentCenterAngle = segmentStartAngle + (anglePerSegment / 2);
+            
+            // Angolo di rotazione richiesto per portare il CENTRO del segmento a 0 gradi (destra)
+            let requiredRotation = 360 - segmentCenterAngle;
+            requiredRotation = ((requiredRotation % 360) + 360) % 360;
+            
+            const totalSpins = 5;
+            // Angolo totale per l'animazione (molti giri + rotazione richiesta)
+            const targetAngleAnimation = (totalSpins * 360) + requiredRotation;
+            
+            // Angolo finale su cui la ruota DEVE stabilizzarsi (0-360 gradi)
+            const finalRotationAngle = requiredRotation; 
+            
+            // --- FINE CALCOLO TARGET ANGLE ---
             
             let start = null;
             const duration = 3000;
@@ -346,20 +440,26 @@
               
               if (progress < 1) {
                 const easeOut = 1 - Math.pow(1 - progress, 4);
-                setRotation(targetAngle * easeOut);
+                // Utilizza l'angolo animato che include i giri
+                setRotation(targetAngleAnimation * easeOut); 
                 requestAnimationFrame(animate);
               } else {
-                setRotation(targetAngle);
+                // PASSAGGIO CRITICO: Imposta l'angolo finale NORMALE (0-360)
+                // Questo risolve i problemi di disallineamento all'arresto.
+                setRotation(finalRotationAngle); 
+                
+                // Imposta gli stati di estrazione
                 setCurrentNumber(targetNum);
                 setSpinning(false);
                 setShowConfetti(true);
                 
+                // Esegui la rimozione del numero con un ritardo fisso
                 setTimeout(() => {
                   const newNumbers = numbers.filter(n => n !== targetNum);
                   setNumbers(newNumbers);
                   setEliminatedNumbers([...eliminatedNumbers, targetNum]);
                   setCurrentNumber(null);
-                  setRotation(0);
+                  setRotation(0); // Reset della rotazione per la prossima estrazione
                 }, 2000);
               }
             };
@@ -425,8 +525,8 @@
                     </div>
                     
                     {currentNumber && (
-                      <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-red-600 px-16 py-8 rounded-3xl mb-8 animate-bounce shadow-2xl border-4 border-yellow-200">
-                        <p className="text-6xl font-bold text-white drop-shadow-2xl">🎉 Numero: {currentNumber} 🎉</p>
+                      <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-red-600 px-16 py-8 rounded-3xl mb-8 shadow-2xl border-4 border-yellow-200">
+                        <p className="text-6xl font-bold text-white drop-shadow-2xl">🎉 ULTIMO ESTRATTO: {currentNumber} 🎉</p>
                       </div>
                     )}
                     
@@ -445,7 +545,7 @@
                     {gameOver && (
                       <div className="bg-gradient-to-r from-yellow-300 via-amber-400 to-red-500 p-12 rounded-3xl border-4 border-yellow-200 shadow-2xl animate-pulse">
                         <h2 className="text-6xl font-bold text-white mb-6 drop-shadow-2xl">🏆 GIOCO TERMINATO! 🏆</h2>
-                        <p className="text-4xl text-white drop-shadow-xl">Il numero vincente era: <span className="text-7xl font-bold">{numbers[0]}</span></p>
+                        <p className="text-4xl text-white drop-shadow-xl">Il numero vincente (segreto) era: <span className="text-7xl font-bold">{numbers[0]}</span></p>
                       </div>
                     )}
                     

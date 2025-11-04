@@ -2,7 +2,6 @@
            
 
 
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -394,7 +393,7 @@
             const nums = Array.from({ length: 50 }, (_, i) => i + 1);
             setNumbers(nums);
             setGameStarted(true);
-            shuffleNumbers(nums); // Mescola all'inizio
+            // I numeri non vengono più mescolati qui per rispettare l'ordine iniziale
           };
 
           const shuffleNumbers = (initialNumbers = numbers) => {
